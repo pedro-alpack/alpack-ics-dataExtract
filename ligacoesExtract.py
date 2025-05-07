@@ -1,5 +1,17 @@
 import fitz  # PyMuPDF
 import re
+import psycopg2
+from datetime import datetime
+from pprint import pprint
+
+
+db_config ={
+    'host': 'localhost',
+    'dbname': 'postgres',
+    'user': 'postgres',
+    'password': 'postgres',
+    'port': 5432
+}
 
 def extrair_dados_pdf(caminho_pdf):
     doc = fitz.open(caminho_pdf)
@@ -76,5 +88,30 @@ caminho_pdf = 'C:/Users/tialp/Desktop/Relatórios.pdf'
 resultado = extrair_dados_pdf(caminho_pdf)
 resultado = ordenar_por_indices_renumerando(resultado)
 
-from pprint import pprint
 pprint(resultado)
+
+try:
+    conn = psycopg2.connect(**db_config)
+    cur = conn.cursor()
+    
+    for ramal, ligacoes in resultado.items():
+        for lig_id, info in ligacoes.items():
+            data_sql = datetime.strptime(info['data'], "%d/%m/%Y").date()
+            horario_sql = datetime.strptime(info['horario'], "%H:%M:%S").time()
+            duracao_sql = datetime.strptime(info['duracao'], "%H:%M:%S").time()
+            ramal_int = int(info['ramal'])
+            
+            cur.execute("""
+                INSERT INTO ligacoes (data, horario, ramal, duracao, ligID)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
+
+    conn.commit()
+    print("✅ Inserções realizadas com sucesso!")
+    
+except Exception as e:
+    print("❌ Erro ao inserir no banco:", e)
+
+finally:
+    if 'cur' in locals(): cur.close()
+    if 'conn' in locals(): conn.close()
