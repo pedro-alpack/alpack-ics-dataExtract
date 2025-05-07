@@ -46,7 +46,8 @@ def extrair_dados_pdf(caminho_pdf):
                                 registros[ramal_atual][f'lig{lig_index}'] = {
                                     'data': data,
                                     'horario': horario,
-                                    'duracao': duracao
+                                    'duracao': duracao,
+                                    'ramal': ramal_atual
                                 }
                                 print(f"→ {ramal_atual} - lig{lig_index}: {data} {horario} {duracao}")
                                 lig_index += 1
@@ -71,7 +72,7 @@ def ordenar_por_indices_renumerando(registros):
     return registros_ordenados
 
 # Caminho do PDF
-caminho_pdf = 'C:/Users/tialp/Desktop/relatorios.pdf'
+caminho_pdf = 'C:/Users/tialp/Desktop/Relatórios.pdf'
 resultado = extrair_dados_pdf(caminho_pdf)
 resultado = ordenar_por_indices_renumerando(resultado)
 
