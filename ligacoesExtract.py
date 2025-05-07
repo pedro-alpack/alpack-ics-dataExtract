@@ -9,7 +9,7 @@ db_config ={
     'host': 'localhost',
     'dbname': 'postgres',
     'user': 'postgres',
-    'password': 'postgres',
+    'password': 'Admin@alpack',
     'port': 5432
 }
 
@@ -107,10 +107,10 @@ try:
             """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
 
     conn.commit()
-    print("✅ Inserções realizadas com sucesso!")
-    
+    print("Insercoes realizadas com sucesso!")
+
 except Exception as e:
-    print("❌ Erro ao inserir no banco:", e)
+    print("Erro ao inserir no banco:", repr(e))  # Evita erros de codificação
 
 finally:
     if 'cur' in locals(): cur.close()
