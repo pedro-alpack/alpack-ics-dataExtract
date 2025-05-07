@@ -119,6 +119,11 @@ try:
 
     conn.commit()
     print("✔ Inserções finalizadas!")
+    
+    # Remove o PDF após sucesso
+    if os.path.exists(caminho_pdf):
+        os.remove(caminho_pdf)
+        print(f"🗑 Arquivo PDF removido: {caminho_pdf}")
 
 except Exception as e:
     print("Erro ao inserir no banco:", repr(e))
