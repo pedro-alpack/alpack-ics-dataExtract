@@ -100,18 +100,30 @@ try:
             horario_sql = datetime.strptime(info['horario'], "%H:%M:%S").time()
             duracao_sql = datetime.strptime(info['duracao'], "%H:%M:%S").time()
             ramal_int = int(info['ramal'])
+
+            # Verificação antes de inserir
+            cur.execute("""
+                SELECT 1 FROM ligacoes
+                WHERE data = %s AND horario = %s AND ramal = %s AND duracao = %s AND ligID = %s
+                LIMIT 1
+            """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
             
+            if cur.fetchone():
+                print(f"⏩ Ignorado duplicado: {data_sql} {horario_sql} ramal {ramal_int} ligID {lig_id}")
+                continue  # já existe
+
             cur.execute("""
                 INSERT INTO ligacoes (data, horario, ramal, duracao, ligID)
                 VALUES (%s, %s, %s, %s, %s)
             """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
 
     conn.commit()
-    print("Insercoes realizadas com sucesso!")
+    print("✔ Inserções finalizadas!")
 
 except Exception as e:
-    print("Erro ao inserir no banco:", repr(e))  # Evita erros de codificação
+    print("Erro ao inserir no banco:", repr(e))
 
 finally:
     if 'cur' in locals(): cur.close()
     if 'conn' in locals(): conn.close()
+
