@@ -3,7 +3,7 @@ import re
 import psycopg2
 from datetime import datetime
 from pprint import pprint
-
+import os
 
 db_config ={
     'host': 'localhost',
@@ -84,7 +84,7 @@ def ordenar_por_indices_renumerando(registros):
     return registros_ordenados
 
 # Caminho do PDF
-caminho_pdf = 'C:/Users/tialp/Desktop/Relatórios.pdf'
+caminho_pdf = os.path.expanduser("~/Desktop/Relatórios.pdf")
 resultado = extrair_dados_pdf(caminho_pdf)
 resultado = ordenar_por_indices_renumerando(resultado)
 
