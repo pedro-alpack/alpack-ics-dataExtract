@@ -55,14 +55,24 @@ def extrair_dados_pdf(caminho_pdf):
                             if len(data_hora) == 2:
                                 data, horario = data_hora
                                 duracao = buffer[2]
-                                registros[ramal_atual][f'lig{lig_index}'] = {
-                                    'data': data,
-                                    'horario': horario,
-                                    'duracao': duracao,
-                                    'ramal': ramal_atual
-                                }
-                                print(f"→ {ramal_atual} - lig{lig_index}: {data} {horario} {duracao}")
-                                lig_index += 1
+                                from datetime import time
+
+                                hora_minima = time(7, 40)
+                                hora_maxima = time(17, 50)
+
+                                hora_ligacao = datetime.strptime(horario, "%H:%M:%S").time()
+                                if hora_minima <= hora_ligacao <= hora_maxima:
+                                    registros[ramal_atual][f'lig{lig_index}'] = {
+                                        'data': data,
+                                        'horario': horario,
+                                        'duracao': duracao,
+                                        'ramal': ramal_atual
+                                    }
+                                    print(f"→ {ramal_atual} - lig{lig_index}: {data} {horario} {duracao}")
+                                    lig_index += 1
+                                else:
+                                    print(f"⏹ Ignorada ligação fora do horário: {data} {horario}")
+
                         except Exception as e:
                             print(f"⚠️ Erro ao processar ligação: {buffer} → {e}")
                         finally:
@@ -84,7 +94,7 @@ def ordenar_por_indices_renumerando(registros):
     return registros_ordenados
 
 # Caminho do PDF
-caminho_pdf = os.path.expanduser("~/Desktop/Relatórios.pdf")
+caminho_pdf = os.path.expanduser("~/Downloads/Relatórios.pdf")
 resultado = extrair_dados_pdf(caminho_pdf)
 resultado = ordenar_por_indices_renumerando(resultado)
 
