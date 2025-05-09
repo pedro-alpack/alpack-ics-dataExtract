@@ -1,10 +1,25 @@
 # NOTA → Para o total entendimento dessa automação é necessário ler o conjunto de 'funções atalho' que simplificam certas ações 
 
-import pyautogui
-import time
+# Imports
 from datetime import datetime
 import os
+import pandas as pd
+import psycopg2
+from psycopg2 import sql
+import pyautogui
+import time
 
+# Configuração de conexão PostgreSql
+db_config ={
+    'host': 'localhost',
+    'dbname': 'postgres',
+    'user': 'postgres',
+    'password': 'Admin@alpack',
+    'port': 5432
+}
+
+def get_db_connection():
+    return psycopg2.connect(**db_config)
 
 # 🚨 Funções atalho
 
@@ -69,7 +84,7 @@ def waitForExcelWindow(title_contains='Excel'):
 # Dia de hoje
 data_formatada = datetime.now().strftime('%d%m%Y')
 
-# Automação
+# ⚙ Automação
 def exportFromSystem():
     pyautogui.hotkey('winleft', 'd')
     wait(3)
@@ -106,12 +121,113 @@ def exportFromSystem():
     pyautogui.hotkey('ctrl', 'b')
     for i in range(4):
         pyautogui.press('enter')
-    wait(1)
+        wait(0.5)
+    wait(1.5)
     pyautogui.press('enter')
-    wait(0.2)
+    wait(1)
     pyautogui.hotkey('alt', 'f4')
     wait(0.2)
     pyautogui.hotkey('alt', 'f4')
     pyautogui.press('enter')
     
+# Função para carregar os dados do Excel
+def load_excel():
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+    file_path = os.path.join(desktop, "Pasta1.xlsx")
+    df = pd.read_excel(file_path, engine="openpyxl")  # sem dtype=str!
+    df = df.dropna(subset=["Data de Emissão"]).reset_index(drop=True)
+
+    df["data"] = pd.to_datetime(df["Data de Emissão"], dayfirst=True).dt.date
+
+    print("VALORES ORIGINAIS DO EXCEL:")
+    print(df["Total Pedido"].head(10).tolist())
+
+    # Conversão segura
+    df["valor_vendido"] = df["Total Pedido"].apply(lambda x: round(float(x), 2))
+
+    print("VALORES CONVERTIDOS:")
+    print(df[["Total Pedido", "valor_vendido"]].head(10))
+
+    df["vendedor"] = df["Vendedor 1"]
+    df["statuspedido"] = df["Status do Pedido"]
+    df["cliente"] = df["Cliente"]
+    df["regiao"] = df["Rota"]
+    df["vendaID"] = df["Id"].astype(int)
+
+    return df[["data", "vendedor", "valor_vendido", "statuspedido", "cliente", "regiao", "vendaID"]], file_path
+
+
+# Função para inserir os dados no db
+def sync_to_postgres(df):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    for _, row in df.iterrows():
+        cursor.execute(
+            """
+            SELECT "statusPedido"
+            FROM vendas
+            WHERE data = %s
+              AND vendedor = %s
+              AND valor_vendido = %s
+              AND cliente = %s
+              AND regiao = %s
+              AND "vendaID" = %s
+            """,
+            (row["data"], row["vendedor"], row["valor_vendido"],
+             row["cliente"], row["regiao"], row["vendaID"])
+        )
+        result = cursor.fetchone()
+
+        if result is None:
+            if abs(row["valor_vendido"]) >= 10**8:
+                print(f"Valor muito alto ignorado: {row['valor_vendido']} (vendaID={row['vendaID']})")
+                continue
+
+            cursor.execute(
+                """
+                INSERT INTO vendas
+                  (data, vendedor, valor_vendido, "statusPedido", cliente, regiao, "vendaID")
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (row["data"], row["vendedor"], row["valor_vendido"],
+                 row["statuspedido"], row["cliente"], row["regiao"], row["vendaID"])
+            )
+
+        else:
+            db_status = result[0]
+            if db_status != row["statuspedido"]:
+                cursor.execute(
+                    """
+                    UPDATE vendas
+                       SET "statusPedido" = %s
+                     WHERE data = %s
+                       AND vendedor = %s
+                       AND valor_vendido = %s
+                       AND cliente = %s
+                       AND regiao = %s
+                       AND "vendaID" = %s
+                    """,
+                    (row["statuspedido"], row["data"], row["vendedor"],
+                     row["valor_vendido"], row["cliente"], row["regiao"], row["vendaID"])
+                )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 exportFromSystem()
+
+wait(4)
+
+if __name__ == "__main__":
+    df, excel_path = load_excel()
+    sync_to_postgres(df)
+
+    try:
+        os.remove(excel_path)
+        print(f"Arquivo {excel_path} removido com sucesso.")
+    except OSError as e:
+        print(f"Erro ao remover o arquivo: {e}")
+
