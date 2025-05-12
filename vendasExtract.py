@@ -2,6 +2,7 @@
 
 # Imports
 from datetime import datetime
+from dotenv import load_dotenv
 import os
 import pandas as pd
 import psycopg2
@@ -10,13 +11,15 @@ import pyautogui
 import subprocess
 import time
 
-# Configuração de conexão PostgreSql
-db_config ={
-    'host': 'localhost',
-    'dbname': 'postgres',
-    'user': 'postgres',
-    'password': 'Admin@alpack',
-    'port': 5432
+ # Carrega variáveis do .env
+load_dotenv() 
+
+db_config = {
+    'host': os.getenv('DB_HOST'),
+    'dbname': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': int(os.getenv('DB_PORT'))
 }
 
 def get_db_connection():
@@ -43,15 +46,6 @@ def leftDoubleClickAt(img):
     location = pyautogui.locateCenterOnScreen(path, confidence=0.7)
     if location:
         pyautogui.doubleClick(location)
-    else:
-        print(f"Imagem '{img}' não encontrada na tela :(")
-        
-# Simplificação para clicar com o botão direito em imagens na tela
-def rightClickAt(img):
-    path = os.path.join(os.path.dirname(__file__), 'assets', img)
-    location = pyautogui.locateCenterOnScreen(path, confidence=0.7)
-    if location:
-        pyautogui.click(location, button='right')
     else:
         print(f"Imagem '{img}' não encontrada na tela :(")
         
@@ -163,16 +157,13 @@ def sync_to_postgres(df):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Garantir que a data esteja no formato correto (ajuste conforme o formato do seu DataFrame)
     hoje = datetime.now().date()
 
-    # Remover todos os registros do dia atual
     cursor.execute("""
         DELETE FROM vendas
         WHERE data = %s
     """, (hoje,))
 
-    # Inserir todas as novas linhas
     for _, row in df.iterrows():
         if abs(row["valor_vendido"]) >= 10**8:
             print(f"Valor muito alto ignorado: {row['valor_vendido']} (vendaID={row['vendaID']})")
@@ -204,7 +195,7 @@ if __name__ == "__main__":
     try:
         os.remove(excel_path)
         print(f"Arquivo {excel_path} removido com sucesso.")
-        subprocess.run(["python", "ligacoesDownload.py"])
+        subprocess.run(["python", "ligacoesDownload.py"]) # Executa a próxima automação da sequência
     except OSError as e:
         print(f"Erro ao remover o arquivo: {e}")
 

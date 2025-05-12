@@ -1,18 +1,24 @@
-import fitz  # PyMuPDF
-import re
-import psycopg2
+# Imports
 from datetime import datetime
-from pprint import pprint
+from dotenv import load_dotenv
+import fitz
 import os
+from pprint import pprint
+import psycopg2
+import re
 
-db_config ={
-    'host': 'localhost',
-    'dbname': 'postgres',
-    'user': 'postgres',
-    'password': 'Admin@alpack',
-    'port': 5432
+# Carrega variáveis do .env
+load_dotenv()  
+
+db_config = {
+    'host': os.getenv('DB_HOST'),
+    'dbname': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': int(os.getenv('DB_PORT'))
 }
 
+# Função para ler e extrair as informações do relatório gerado por outra automação (.pdf)
 def extrair_dados_pdf(caminho_pdf):
     doc = fitz.open(caminho_pdf)
     registros = {}
@@ -80,20 +86,19 @@ def extrair_dados_pdf(caminho_pdf):
 
     return registros
 
+# Função para ordenar pelas chaves 'ligX' com base no número X
 def ordenar_por_indices_renumerando(registros):
     registros_ordenados = {}
     for ramal, ligacoes in registros.items():
-        # Ordena pelas chaves 'ligX' com base no número X
+        
         ordenado = sorted(
             ligacoes.items(),
             key=lambda x: int(x[0].replace("lig", ""))
         )
-        # Recria o dicionário com lig0, lig1, lig2... renumerados
         novo = {f'lig{i}': lig for i, (_, lig) in enumerate(ordenado)}
         registros_ordenados[ramal] = novo
     return registros_ordenados
 
-# Caminho do PDF
 caminho_pdf = os.path.expanduser("~/Downloads/Relatórios.pdf")
 resultado = extrair_dados_pdf(caminho_pdf)
 resultado = ordenar_por_indices_renumerando(resultado)

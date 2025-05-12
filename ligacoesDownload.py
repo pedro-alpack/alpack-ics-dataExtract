@@ -28,16 +28,7 @@ def leftDoubleClickAt(img):
         pyautogui.doubleClick(location)
     else:
         print(f"Imagem '{img}' não encontrada na tela :(")
-        
-# Simplificação para clicar com o botão direito em imagens na tela
-def rightClickAt(img):
-    path = os.path.join(os.path.dirname(__file__), 'assets', img)
-    location = pyautogui.locateCenterOnScreen(path, confidence=0.7)
-    if location:
-        pyautogui.click(location, button='right')
-    else:
-        print(f"Imagem '{img}' não encontrada na tela :(")
-        
+                
 # Função para esperar com que uma imagem exista na tela
 def exists(img):
     path = os.path.join(os.path.dirname(__file__), 'assets', img)
@@ -82,4 +73,4 @@ def downloadFile():
     leftClickAt('closeChrome.png')
     
 downloadFile()
-subprocess.run(["python", "ligacoesExtract.py"])
+subprocess.run(["python", "ligacoesExtract.py"]) # Executa a próxima automação da sequência
