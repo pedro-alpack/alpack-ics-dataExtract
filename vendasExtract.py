@@ -7,6 +7,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import sql
 import pyautogui
+import subprocess
 import time
 
 # Configuração de conexão PostgreSql
@@ -228,6 +229,7 @@ if __name__ == "__main__":
     try:
         os.remove(excel_path)
         print(f"Arquivo {excel_path} removido com sucesso.")
+        subprocess.run(["python", "ligacoesDownload.py"])
     except OSError as e:
         print(f"Erro ao remover o arquivo: {e}")
 
