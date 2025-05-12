@@ -163,55 +163,30 @@ def sync_to_postgres(df):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Garantir que a data esteja no formato correto (ajuste conforme o formato do seu DataFrame)
+    hoje = datetime.now().date()
+
+    # Remover todos os registros do dia atual
+    cursor.execute("""
+        DELETE FROM vendas
+        WHERE data = %s
+    """, (hoje,))
+
+    # Inserir todas as novas linhas
     for _, row in df.iterrows():
+        if abs(row["valor_vendido"]) >= 10**8:
+            print(f"Valor muito alto ignorado: {row['valor_vendido']} (vendaID={row['vendaID']})")
+            continue
+
         cursor.execute(
             """
-            SELECT "statusPedido"
-            FROM vendas
-            WHERE data = %s
-              AND vendedor = %s
-              AND valor_vendido = %s
-              AND cliente = %s
-              AND regiao = %s
-              AND "vendaID" = %s
+            INSERT INTO vendas
+              (data, vendedor, valor_vendido, "statusPedido", cliente, regiao, "vendaID")
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """,
             (row["data"], row["vendedor"], row["valor_vendido"],
-             row["cliente"], row["regiao"], row["vendaID"])
+             row["statuspedido"], row["cliente"], row["regiao"], row["vendaID"])
         )
-        result = cursor.fetchone()
-
-        if result is None:
-            if abs(row["valor_vendido"]) >= 10**8:
-                print(f"Valor muito alto ignorado: {row['valor_vendido']} (vendaID={row['vendaID']})")
-                continue
-
-            cursor.execute(
-                """
-                INSERT INTO vendas
-                  (data, vendedor, valor_vendido, "statusPedido", cliente, regiao, "vendaID")
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
-                (row["data"], row["vendedor"], row["valor_vendido"],
-                 row["statuspedido"], row["cliente"], row["regiao"], row["vendaID"])
-            )
-
-        else:
-            db_status = result[0]
-            if db_status != row["statuspedido"]:
-                cursor.execute(
-                    """
-                    UPDATE vendas
-                       SET "statusPedido" = %s
-                     WHERE data = %s
-                       AND vendedor = %s
-                       AND valor_vendido = %s
-                       AND cliente = %s
-                       AND regiao = %s
-                       AND "vendaID" = %s
-                    """,
-                    (row["statuspedido"], row["data"], row["vendedor"],
-                     row["valor_vendido"], row["cliente"], row["regiao"], row["vendaID"])
-                )
 
     conn.commit()
     cursor.close()
