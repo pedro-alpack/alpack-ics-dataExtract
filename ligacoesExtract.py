@@ -128,7 +128,6 @@ try:
             """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
 
     conn.commit()
-<<<<<<< Updated upstream
     print("✔ Inserções finalizadas!")
     
     # Remove o PDF após sucesso
@@ -138,12 +137,6 @@ try:
 
 except Exception as e:
     print("Erro ao inserir no banco:", repr(e))
-=======
-    print("Insercoes realizadas com sucesso!")
-
-except Exception as e:
-    print("Erro ao inserir no banco:", repr(e))  # Evita erros de codificação
->>>>>>> Stashed changes
 
 finally:
     if 'cur' in locals(): cur.close()
