@@ -90,8 +90,8 @@ ultimo_dia_num = calendar.monthrange(ano, mes)[1]
 ultimo_dia = date(ano, mes, ultimo_dia_num)
 
 # Datas formatadas para strings
-primeiro_dia_str = primeiro_dia.strftime('%d/%m/%Y')
-ultimo_dia_str = ultimo_dia.strftime('%d/%m/%Y')
+primeiro_dia_str = primeiro_dia.strftime('%d%m%Y')
+ultimo_dia_str = ultimo_dia.strftime('%d%m%Y')
 
 # ⚙ Automação
 def exportFromSystem():
