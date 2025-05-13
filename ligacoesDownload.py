@@ -66,7 +66,14 @@ def downloadFile():
     wait(1)
     leftDoubleClickAt('selectedEmail.png')
     exists('file.png')
-    leftClickAt('file.png')
+    filepath = os.path.join(os.path.dirname(__file__), 'assets', 'file.png')
+    location = pyautogui.locateCenterOnScreen(filepath, confidence=0.9)
+
+    if location:
+        x, y = location
+        pyautogui.click(x, y - 60)
+    else:
+        print("Imagem 'file.png' não encontrada na tela :(")
     exists('fileOpen.png')
     leftClickAt('downloadBtn.png')
     wait(5)

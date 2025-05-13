@@ -117,12 +117,13 @@ def exportFromSystem():
     for i in range(4):
         pyautogui.press('enter')
         wait(0.5)
-    wait(1.5)
+    wait(2)
     pyautogui.press('enter')
+    wait(2)
+    pyautogui.hotkey('alt', 'f4')
     wait(1)
     pyautogui.hotkey('alt', 'f4')
-    wait(0.2)
-    pyautogui.hotkey('alt', 'f4')
+    wait(1)
     pyautogui.press('enter')
     
 # Função para carregar os dados do Excel
