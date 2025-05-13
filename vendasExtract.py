@@ -1,7 +1,8 @@
 # NOTA → Para o total entendimento dessa automação é necessário ler o conjunto de 'funções atalho' que simplificam certas ações 
 
 # Imports
-from datetime import datetime
+import calendar
+from datetime import datetime, date
 from dotenv import load_dotenv
 import os
 import pandas as pd
@@ -76,8 +77,21 @@ def waitForExcelWindow(title_contains='Excel'):
         print("Aguardando o Excel abrir...")
         wait(1)
 
-# Dia de hoje
-data_formatada = datetime.now().strftime('%d%m%Y')
+# Data atual
+hoje = date.today()
+ano = hoje.year
+mes = hoje.month
+
+# Primeiro dia do mês
+primeiro_dia = date(ano, mes, 1)
+
+# Último dia do mês
+ultimo_dia_num = calendar.monthrange(ano, mes)[1]
+ultimo_dia = date(ano, mes, ultimo_dia_num)
+
+# Datas formatadas para strings
+primeiro_dia_str = primeiro_dia.strftime('%d/%m/%Y')
+ultimo_dia_str = ultimo_dia.strftime('%d/%m/%Y')
 
 # ⚙ Automação
 def exportFromSystem():
@@ -104,9 +118,9 @@ def exportFromSystem():
     wait(1)
     for i in range(4):
         pyautogui.press('tab')
-    pyautogui.write(data_formatada)
+    pyautogui.write(primeiro_dia_str)
     pyautogui.press('tab')
-    pyautogui.write(data_formatada)
+    pyautogui.write(ultimo_dia_str)
     wait(0.5)
     leftClickAt('aplicarFiltro.png')
     wait(5)
@@ -158,12 +172,8 @@ def sync_to_postgres(df):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    hoje = datetime.now().date()
-
-    cursor.execute("""
-        DELETE FROM vendas
-        WHERE data = %s
-    """, (hoje,))
+    # Remove todos os registros da tabela, evitando erros frequentes
+    cursor.execute("DELETE FROM vendas")
 
     for _, row in df.iterrows():
         if abs(row["valor_vendido"]) >= 10**8:
@@ -183,6 +193,7 @@ def sync_to_postgres(df):
     conn.commit()
     cursor.close()
     conn.close()
+
 
 
 exportFromSystem()
