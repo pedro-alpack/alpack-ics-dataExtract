@@ -3,3 +3,5 @@ pymupdf
 psycopg2-binary
 pandas
 python-dotenv
+python-docx
+tk
