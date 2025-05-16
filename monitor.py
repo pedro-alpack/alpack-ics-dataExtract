@@ -19,9 +19,13 @@ while True:
         time.sleep(60)  # Espera 1 minuto
         ja_rodou_historico = False  # Garante que o histórico possa rodar às 18h
 
-    # Às 18:00 – rodar historicoVendasExtract.py apenas uma vez
+    # Às 18:00 – rodar historicoVendasExtract.py, importarProdutos.py e topProdutos.py apenas uma vez 
     elif hora.hour == 18 and hora.minute == 0 and not ja_rodou_historico:
         subprocess.run(['python', os.path.join(base_path, 'historicoVendasExtract.py')])
+        time.sleep(120)
+        subprocess.run(['python', os.path.join(base_path, 'importarProdutos.py')])
+        time.sleep(60)
+        subprocess.run(['python', os.path.join(base_path, 'topProdutos.py')])
         ja_rodou_historico = True
         time.sleep(60)
 
