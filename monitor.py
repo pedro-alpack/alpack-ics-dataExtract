@@ -26,6 +26,8 @@ while True:
         subprocess.run(['python', os.path.join(base_path, 'importarProdutos.py')])
         time.sleep(60)
         subprocess.run(['python', os.path.join(base_path, 'topProdutos.py')])
+        time.sleep(100)
+        subprocess.run(['python', os.path.join(base_path, 'topClientes.py')])
         ja_rodou_historico = True
         time.sleep(60)
 

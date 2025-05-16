@@ -105,7 +105,7 @@ def exportFromSystem():
     for i in range(2):
         pyautogui.press('tab')
     leftClickAt('selectIcon.png')
-    pyautogui.write('pr')
+    pyautogui.write('cl')
     pyautogui.press('enter')
     leftClickAt('selectIcon.png')
     pyautogui.write('s')
@@ -139,44 +139,41 @@ def load_excel():
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     file_path = os.path.join(desktop, "Pasta1.xlsx")
 
-    # Lê colunas A (0), B (1), D (3) e K (10), a partir da linha 2
-    df = pd.read_excel(file_path, usecols=[0, 1, 3, 10], skiprows=1)
-    df.columns = ['prodid', 'prodname', 'qtdvend', 'valvend']
+    # Lê colunas B (1) e I (8), a partir da linha 2
+    df = pd.read_excel(file_path, usecols=[1, 8], skiprows=1)
+    df.columns = ['cliente', 'valor']
 
-    # Substitui valores vazios em 'prodname'
-    df['prodname'] = df['prodname'].fillna('produto sem nome')
+    # Substitui cliente vazio por 'cliente sem nome'
+    df['cliente'] = df['cliente'].fillna('cliente sem nome')
 
     return df, file_path
 
+
     
-
-
 # Função para inserir os dados no db
 def sync_to_postgres(df):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Remove todos os registros da tabela topvendas
-        cursor.execute("DELETE FROM topvendas;")
+        # Remove todos os registros da tabela topclientes
+        cursor.execute("DELETE FROM topclientes;")
 
         # Insere os dados da planilha
         for index, row in df.iterrows():
             cursor.execute(
                 """
-                INSERT INTO topvendas (prodid, prodname, qtdvend, valvend)
-                VALUES (%s, %s, %s, %s);
+                INSERT INTO topclientes (cliente, valor)
+                VALUES (%s, %s);
                 """,
                 (
-                    int(row['prodid']),
-                    row['prodname'],
-                    float(row['qtdvend']) if not pd.isna(row['qtdvend']) else 0,
-                    float(row['valvend']) if not pd.isna(row['valvend']) else 0.00
+                    row['cliente'],
+                    float(row['valor']) if not pd.isna(row['valor']) else 0.00
                 )
             )
 
         conn.commit()
-        print("Dados inseridos com sucesso na tabela topvendas.")
+        print("Dados inseridos com sucesso na tabela topclientes.")
 
     except Exception as e:
         conn.rollback()
@@ -184,7 +181,6 @@ def sync_to_postgres(df):
     finally:
         cursor.close()
         conn.close()
-
 
     
 exportFromSystem()
