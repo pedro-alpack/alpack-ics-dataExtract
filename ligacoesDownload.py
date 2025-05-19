@@ -52,7 +52,15 @@ def downloadFile():
     wait(3)
     exists('chrome.png')
     leftDoubleClickAt('chrome.png')
-    wait(1)
+    exists('chromeOpen.png')
+    try:     
+        path = os.path.join(os.path.dirname(__file__), 'assets', 'fullscreen.png')
+        location = pyautogui.locateCenterOnScreen(path, confidence=0.9)
+        if location:
+            pyautogui.click(location)
+    except:
+        print('Chrome já está em tela cheia, continuando...')
+    wait(0.5)
     exists('gmailIcon.png')
     leftClickAt('gmailIcon.png')
     exists('composebtn.png')
