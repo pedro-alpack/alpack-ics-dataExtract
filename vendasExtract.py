@@ -98,6 +98,7 @@ def exportFromSystem():
     pyautogui.hotkey('winleft', 'd')
     wait(3)
     leftDoubleClickAt('aresIcon.png')
+    wait(1)
     exists('loginIcon.png')
     wait(3)
     pyautogui.write('1234')
