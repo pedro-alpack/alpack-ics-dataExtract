@@ -82,7 +82,7 @@ def downloadFile():
     wait(1)
     leftClickAt('downloadBtn.png')
     wait(5)
-    leftClickAt('closeChrome.png')
+    leftClickAt('close.png')
     
 downloadFile()
 subprocess.run(["python", "ligacoesExtract.py"]) # Executa a próxima automação da sequência
