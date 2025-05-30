@@ -172,8 +172,11 @@ def sync_to_postgres(df):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Remove todos os registros da tabela, evitando erros frequentes
+    # Remove todos os registros da tabela
     cursor.execute("DELETE FROM vendas")
+
+    # Reseta a sequência do campo id para 1
+    cursor.execute("SELECT setval('vendas_id_seq', 1, false);")
 
     for _, row in df.iterrows():
         if abs(row["valor_vendido"]) >= 10**8:
@@ -193,6 +196,7 @@ def sync_to_postgres(df):
     conn.commit()
     cursor.close()
     conn.close()
+
 
 
 
