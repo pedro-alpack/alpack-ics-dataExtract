@@ -160,9 +160,6 @@ def sync_to_postgres(df):
         # Remove todos os registros da tabela topvendas
         cursor.execute("DELETE FROM topvendas;")
         
-        # Reseta a sequência do campo id para 1
-        cursor.execute("SELECT setval('topvendas_id_seq', 1, false);")
-
         # Insere os dados da planilha
         for index, row in df.iterrows():
             cursor.execute(

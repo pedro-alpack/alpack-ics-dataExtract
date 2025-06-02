@@ -181,9 +181,6 @@ def sync_to_postgres(df):
 
     # Remove todos os registros da tabela, evitando erros frequentes
     cursor.execute("DELETE FROM vendasHistorico")
-    
-    # Reseta a sequência do campo id para 1
-    cursor.execute("SELECT setval('vendasHistorico_id_seq', 1, false);")
 
     for _, row in df.iterrows():
         if abs(row["valor_vendido"]) >= 10**8:
