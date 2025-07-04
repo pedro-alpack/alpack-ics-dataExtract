@@ -4,8 +4,7 @@
 from dotenv import load_dotenv
 import os
 import pandas as pd
-import psycopg2
-from psycopg2 import sql
+import psycopg
 import pyautogui
 import subprocess
 import time
@@ -22,7 +21,19 @@ db_config = {
 }
 
 def get_db_connection():
-    return psycopg2.connect(**db_config)
+    try:
+        return psycopg.connect(
+            host=os.getenv('DB_HOST'),
+            dbname=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            port=int(os.getenv('DB_PORT'))
+        )
+    except Exception as e:
+        print("Erro ao conectar com o banco de dados (psycopg v3):")
+        print(e)
+        raise
+
 
 # 🚨 Funções atalho
 
@@ -79,7 +90,7 @@ def waitForExcelWindow(title_contains='Excel'):
 def exportFromSystem():
     pyautogui.hotkey('winleft', 'd')
     wait(3)
-    leftDoubleClickAt('aresIcon.png')
+    leftDoubleClickAt('programIcon.png')
     exists('loginIcon.png')
     wait(3)
     pyautogui.write('1234')
@@ -121,32 +132,28 @@ def load_excel():
 
 # Função para inserir os dados no db
 def sync_to_postgres(df):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     try:
-        # Remove todos os registros existentes na tabela
-        cursor.execute("DELETE FROM produtos;")
-        
-        # Reseta a sequência do campo id para 1
-        cursor.execute("SELECT setval('produtos_id_seq', 1, false);")
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Remove todos os registros existentes na tabela
+                cursor.execute("DELETE FROM produtos;")
+                
+                # Reseta a sequência do campo id para 1
+                cursor.execute("SELECT setval('produtos_id_seq', 1, false);")
 
-        # Insere os dados da planilha
-        for index, row in df.iterrows():
-            cursor.execute(
-                "INSERT INTO produtos (prodid, produto, grupo) VALUES (%s, %s, %s);",
-                (int(row['prodid']), row['produto'], row['grupo'])
-            )
+                # Insere os dados da planilha
+                for _, row in df.iterrows():
+                    cursor.execute(
+                        "INSERT INTO produtos (prodid, produto, grupo) VALUES (%s, %s, %s);",
+                        (int(row['prodid']), row['produto'], row['grupo'])
+                    )
 
-        conn.commit()
-        print("Dados inseridos com sucesso no PostgreSQL.")
+            conn.commit()
+            print("Dados inseridos com sucesso no PostgreSQL.")
 
     except Exception as e:
-        conn.rollback()
         print(f"Erro ao inserir dados: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+
 
 exportFromSystem()
 

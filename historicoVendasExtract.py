@@ -6,10 +6,13 @@ from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 import os
 import pandas as pd
-import psycopg2
-from psycopg2 import sql
+import psycopg
 import pyautogui
 import time
+import locale
+
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
 
  # Carrega variáveis do .env
 load_dotenv() 
@@ -23,7 +26,19 @@ db_config = {
 }
 
 def get_db_connection():
-    return psycopg2.connect(**db_config)
+    try:
+        return psycopg.connect(
+            host=os.getenv('DB_HOST'),
+            dbname=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            port=int(os.getenv('DB_PORT')),
+        )
+    except Exception as e:
+        print("Erro ao conectar com o banco de dados (psycopg v3):")
+        print(e)
+        raise
+
 
 # 🚨 Funções atalho
 
@@ -104,7 +119,7 @@ ultimo_dia_str = ultimo_dia.strftime('%d%m%Y')
 def exportFromSystem():
     pyautogui.hotkey('winleft', 'd')
     wait(3)
-    leftDoubleClickAt('aresIcon.png')
+    leftDoubleClickAt('programIcon.png')
     exists('loginIcon.png')
     wait(3)
     pyautogui.write('1234')
@@ -133,8 +148,17 @@ def exportFromSystem():
     wait(5)
     leftClickAt('excelIcon.png')
     waitForExcelWindow()
-    wait(1)
-    pyautogui.hotkey('ctrl', 'b')
+    wait(5)
+    largura, altura = pyautogui.size()
+
+    # Calcula o ponto central
+    centro_x = largura // 2
+    centro_y = altura // 2
+
+    # Move o cursor até o centro e clica
+    pyautogui.click(centro_x, centro_y)
+    exists('salvar_ico.png')
+    leftClickAt('salvar_ico.png')
     for i in range(4):
         pyautogui.press('enter')
         wait(0.5)
@@ -152,9 +176,14 @@ def load_excel():
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     file_path = os.path.join(desktop, "Pasta1.xlsx")
     df = pd.read_excel(file_path, engine="openpyxl")  # sem dtype=str!
-    df = df.dropna(subset=["Data de Emissão"]).reset_index(drop=True)
 
-    df["data"] = pd.to_datetime(df["Data de Emissão"], dayfirst=True).dt.date
+    # Usa a coluna I (índice 8) se houver valor, senão usa a coluna A (índice 0)
+    df["data"] = df.apply(
+        lambda row: row.iloc[8] if pd.notnull(row.iloc[8]) else row.iloc[0],
+        axis=1
+    )
+
+    df["data"] = pd.to_datetime(df["data"], dayfirst=True).dt.date
 
     print("VALORES ORIGINAIS DO EXCEL:")
     print(df["Total Pedido"].head(10).tolist())

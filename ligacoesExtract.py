@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import fitz
 import os
 from pprint import pprint
-import psycopg2
+import psycopg
 import re
 
 # Carrega variáveis do .env
@@ -106,35 +106,40 @@ resultado = ordenar_por_indices_renumerando(resultado)
 pprint(resultado)
 
 try:
-    conn = psycopg2.connect(**db_config)
-    cur = conn.cursor()
-    
-    for ramal, ligacoes in resultado.items():
-        for lig_id, info in ligacoes.items():
-            data_sql = datetime.strptime(info['data'], "%d/%m/%Y").date()
-            horario_sql = datetime.strptime(info['horario'], "%H:%M:%S").time()
-            duracao_sql = datetime.strptime(info['duracao'], "%H:%M:%S").time()
-            ramal_int = int(info['ramal'])
+    with psycopg.connect(
+        host=os.getenv('DB_HOST'),
+        dbname=os.getenv('DB_NAME'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        port=int(os.getenv('DB_PORT'))
+    ) as conn:
+        with conn.cursor() as cur:
+            for ramal, ligacoes in resultado.items():
+                for lig_id, info in ligacoes.items():
+                    data_sql = datetime.strptime(info['data'], "%d/%m/%Y").date()
+                    horario_sql = datetime.strptime(info['horario'], "%H:%M:%S").time()
+                    duracao_sql = datetime.strptime(info['duracao'], "%H:%M:%S").time()
+                    ramal_int = int(info['ramal'])
 
-            # Verificação antes de inserir
-            cur.execute("""
-                SELECT 1 FROM ligacoes
-                WHERE data = %s AND horario = %s AND ramal = %s AND duracao = %s AND ligID = %s
-                LIMIT 1
-            """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
-            
-            if cur.fetchone():
-                print(f"⏩ Ignorado duplicado: {data_sql} {horario_sql} ramal {ramal_int} ligID {lig_id}")
-                continue  # já existe
+                    # Verificação antes de inserir
+                    cur.execute("""
+                        SELECT 1 FROM ligacoes
+                        WHERE data = %s AND horario = %s AND ramal = %s AND duracao = %s AND ligID = %s
+                        LIMIT 1
+                    """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
+                    
+                    if cur.fetchone():
+                        print(f"⏩ Ignorado duplicado: {data_sql} {horario_sql} ramal {ramal_int} ligID {lig_id}")
+                        continue  # já existe
 
-            cur.execute("""
-                INSERT INTO ligacoes (data, horario, ramal, duracao, ligID)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
+                    cur.execute("""
+                        INSERT INTO ligacoes (data, horario, ramal, duracao, ligID)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (data_sql, horario_sql, ramal_int, duracao_sql, lig_id))
 
-    conn.commit()
-    print("✔ Inserções finalizadas!")
-    
+        conn.commit()
+        print("✔ Inserções finalizadas!")
+
     # Remove o PDF após sucesso
     if os.path.exists(caminho_pdf):
         os.remove(caminho_pdf)
@@ -142,6 +147,7 @@ try:
 
 except Exception as e:
     print("Erro ao inserir no banco:", repr(e))
+
 
 finally:
     if 'cur' in locals(): cur.close()

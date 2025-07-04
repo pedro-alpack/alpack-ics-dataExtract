@@ -5,8 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 import pandas as pd
-import psycopg2
-from psycopg2 import sql
+import psycopg
 import pyautogui
 import subprocess
 import time
@@ -23,7 +22,8 @@ db_config = {
 }
 
 def get_db_connection():
-    return psycopg2.connect(**db_config)
+    return psycopg.connect(**db_config)
+
 
 # 🚨 Funções atalho
 
@@ -86,7 +86,7 @@ ultimo_dia = f"3112{ano_atual}"
 def exportFromSystem():
     pyautogui.hotkey('winleft', 'd')
     wait(3)
-    leftDoubleClickAt('aresIcon.png')
+    leftDoubleClickAt('programIcon.png')
     exists('loginIcon.png')
     wait(3)
     pyautogui.write('1234')
@@ -104,10 +104,10 @@ def exportFromSystem():
     wait(0.5)
     for i in range(2):
         pyautogui.press('tab')
-    leftClickAt('selectIcon.png')
+    leftClickAt('selectedIcon.png')
     pyautogui.write('pr')
     pyautogui.press('enter')
-    leftClickAt('selectIcon.png')
+    leftClickAt('selectedIcon.png')
     pyautogui.write('s')
     pyautogui.press('enter')
     for i in range(2):
@@ -153,40 +153,33 @@ def load_excel():
 
 # Função para inserir os dados no db
 def sync_to_postgres(df):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     try:
-        # Remove todos os registros da tabela topvendas
-        cursor.execute("DELETE FROM topvendas;")
-        
-        # Reseta a sequência do campo id para 1
-        cursor.execute("SELECT setval('topvendas_id_seq', 1, false);")
-        
-        # Insere os dados da planilha
-        for index, row in df.iterrows():
-            cursor.execute(
-                """
-                INSERT INTO topvendas (prodid, prodname, qtdvend, valvend)
-                VALUES (%s, %s, %s, %s);
-                """,
-                (
-                    int(row['prodid']),
-                    row['prodname'],
-                    float(row['qtdvend']) if not pd.isna(row['qtdvend']) else 0,
-                    float(row['valvend']) if not pd.isna(row['valvend']) else 0.00
-                )
-            )
-
-        conn.commit()
-        print("Dados inseridos com sucesso na tabela topvendas.")
-
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Remove todos os registros da tabela topvendas
+                cursor.execute("DELETE FROM topvendas;")
+                
+                # Reseta a sequência do campo id para 1
+                cursor.execute("SELECT setval('topvendas_id_seq', 1, false);")
+                
+                # Insere os dados da planilha
+                for index, row in df.iterrows():
+                    cursor.execute(
+                        """
+                        INSERT INTO topvendas (prodid, prodname, qtdvend, valvend)
+                        VALUES (%s, %s, %s, %s);
+                        """,
+                        (
+                            int(row['prodid']),
+                            row['prodname'],
+                            float(row['qtdvend']) if not pd.isna(row['qtdvend']) else 0,
+                            float(row['valvend']) if not pd.isna(row['valvend']) else 0.00
+                        )
+                    )
+            conn.commit()
+            print("Dados inseridos com sucesso na tabela topvendas.")
     except Exception as e:
-        conn.rollback()
         print(f"Erro ao inserir dados: {e}")
-    finally:
-        cursor.close()
-        conn.close()
 
 
     
